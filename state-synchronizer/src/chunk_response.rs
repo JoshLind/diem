@@ -82,11 +82,20 @@ impl fmt::Display for GetChunkResponse {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let txns_repr = match self.txn_list_with_proof.first_transaction_version {
             None => "empty".to_string(),
-            Some(first_ver) => format!(
-                "versions [{} - {}]",
-                first_ver,
-                first_ver - 1 + self.txn_list_with_proof.len() as u64
-            ),
+            Some(first_version) => {
+                let last_version = first_version
+                    .checked_add(self.txn_list_with_proof.len() as u64)
+                    .map_or_else(
+                        || "Version overflow on add".into(),
+                        |version| {
+                            version.checked_sub(1).map_or_else(
+                                || "Version overflow on sub".into(),
+                                |version| format!("{}", version),
+                            )
+                        },
+                    );
+                format!("versions [{} - {}]", first_version, last_version)
+            }
         };
         let response_li_repr = match &self.response_li {
             ResponseLedgerInfo::VerifiableLedgerInfo(li) => {

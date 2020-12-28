@@ -81,7 +81,8 @@ pub fn test_state_sync_msg_fuzzer_impl(msg: StateSynchronizerMsg) {
         config.upstream,
         MockExecutorProxy::new(SynchronizerEnvHelper::default_handler(), storage_proxy),
         initial_state,
-    );
+    )
+    .unwrap();
     let mut rt = tokio::runtime::Builder::new()
         .basic_scheduler()
         .build()
