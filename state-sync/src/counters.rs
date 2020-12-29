@@ -95,7 +95,8 @@ pub static PENDING_STATE_SYNC_NETWORK_EVENTS: Lazy<IntCounterVec> = Lazy::new(||
         "diem_state_sync_pending_network_events",
         "Counters(queued,dequeued,dropped) related to pending network notifications for State Sync",
         &["state"]
-    ).unwrap()
+    )
+    .unwrap()
 });
 
 /// Number of chunk requests sent from a node

@@ -246,7 +246,9 @@ impl StateSyncClient {
                     counters::COMMIT_FLOW_FAIL
                         .with_label_values(&[counters::STATE_SYNC_LABEL])
                         .inc();
-                    Err(format_err!("[state sync client] failed to receive commit ACK from state sync on time"))
+                    Err(format_err!(
+                        "[state sync client] failed to receive commit ACK from state sync on time"
+                    ))
                 }
                 Ok(resp) => {
                     let CommitResponse { msg } = resp??;

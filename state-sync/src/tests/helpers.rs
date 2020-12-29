@@ -23,9 +23,9 @@ use memsocket::MemoryListener;
 use rand::{rngs::StdRng, SeedableRng};
 use std::sync::Arc;
 
-pub(crate) struct SynchronizerEnvHelper;
+pub(crate) struct StateSyncEnvHelper;
 
-impl SynchronizerEnvHelper {
+impl StateSyncEnvHelper {
     pub(crate) fn default_handler() -> MockRpcHandler {
         Box::new(|resp| -> Result<TransactionListWithProof> { Ok(resp) })
     }

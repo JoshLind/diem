@@ -7,7 +7,7 @@ use crate::{
     coordinator::StateSyncCoordinator,
     network::{StateSyncMessage, StateSyncSender},
     tests::{
-        helpers::{MockExecutorProxy, SynchronizerEnvHelper},
+        helpers::{MockExecutorProxy, StateSyncEnvHelper},
         mock_storage::MockStorage,
     },
 };
@@ -52,8 +52,8 @@ pub fn test_state_sync_msg_fuzzer_impl(msg: StateSyncMessage) {
     let (mempool_sender, _mempool_receiver) = mpsc::channel(1_024);
     let config = NodeConfig::default_for_validator();
 
-    let (signers, validator_info, _keys, _addrs) = SynchronizerEnvHelper::initial_setup(1);
-    let genesis_li = SynchronizerEnvHelper::genesis_li(&validator_info);
+    let (signers, validator_info, _keys, _addrs) = StateSyncEnvHelper::initial_setup(1);
+    let genesis_li = StateSyncEnvHelper::genesis_li(&validator_info);
     let storage_inner = MockStorage::new(genesis_li, signers[0].clone());
     let initial_state = storage_inner.get_local_storage_state();
     let storage_proxy = Arc::new(RwLock::new(storage_inner));
@@ -79,7 +79,7 @@ pub fn test_state_sync_msg_fuzzer_impl(msg: StateSyncMessage) {
         Waypoint::default(),
         config.state_sync,
         config.upstream,
-        MockExecutorProxy::new(SynchronizerEnvHelper::default_handler(), storage_proxy),
+        MockExecutorProxy::new(StateSyncEnvHelper::default_handler(), storage_proxy),
         initial_state,
     )
     .unwrap();
