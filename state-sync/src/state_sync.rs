@@ -4,7 +4,7 @@ use crate::{
     coordinator::{CoordinatorMessage, SyncCoordinator, SyncRequest},
     counters,
     executor_proxy::{ExecutorProxy, ExecutorProxyTrait},
-    network::{StateSynchronizerEvents, StateSynchronizerSender},
+    network::{StateSyncEvents, StateSyncSender},
 };
 use anyhow::{format_err, Result};
 use diem_config::{
@@ -108,11 +108,7 @@ pub struct StateSync {
 
 impl StateSync {
     pub fn bootstrap(
-        network: Vec<(
-            NodeNetworkId,
-            StateSynchronizerSender,
-            StateSynchronizerEvents,
-        )>,
+        network: Vec<(NodeNetworkId, StateSyncSender, StateSyncEvents)>,
         state_sync_to_mempool_sender: mpsc::Sender<CommitNotification>,
         storage: Arc<dyn DbReader>,
         executor: Box<dyn ChunkExecutor>,
@@ -142,11 +138,7 @@ impl StateSync {
 
     pub fn bootstrap_with_executor_proxy<E: ExecutorProxyTrait + 'static>(
         runtime: Runtime,
-        network: Vec<(
-            NodeNetworkId,
-            StateSynchronizerSender,
-            StateSynchronizerEvents,
-        )>,
+        network: Vec<(NodeNetworkId, StateSyncSender, StateSyncEvents)>,
         state_sync_to_mempool_sender: mpsc::Sender<CommitNotification>,
         role: RoleType,
         waypoint: Waypoint,

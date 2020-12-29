@@ -5,7 +5,7 @@ use crate::{
     chunk_request::{GetChunkRequest, TargetType},
     chunk_response::{GetChunkResponse, ResponseLedgerInfo},
     coordinator::SyncCoordinator,
-    network::{StateSynchronizerMsg, StateSynchronizerSender},
+    network::{StateSyncMessage, StateSyncSender},
     tests::{
         helpers::{MockExecutorProxy, SynchronizerEnvHelper},
         mock_storage::MockStorage,
@@ -46,7 +46,7 @@ proptest! {
     }
 }
 
-pub fn test_state_sync_msg_fuzzer_impl(msg: StateSynchronizerMsg) {
+pub fn test_state_sync_msg_fuzzer_impl(msg: StateSyncMessage) {
     // start up coordinator
     let (_coordinator_sender, coordinator_receiver) = mpsc::unbounded();
     let (mempool_sender, _mempool_receiver) = mpsc::channel(1_024);
@@ -63,7 +63,7 @@ pub fn test_state_sync_msg_fuzzer_impl(msg: StateSynchronizerMsg) {
         diem_channel::new(QueueStyle::FIFO, NonZeroUsize::new(8).unwrap(), None);
     let (connection_reqs_tx, _) =
         diem_channel::new(QueueStyle::FIFO, NonZeroUsize::new(8).unwrap(), None);
-    let network_sender = StateSynchronizerSender::new(
+    let network_sender = StateSyncSender::new(
         PeerManagerRequestSender::new(network_reqs_tx),
         ConnectionRequestSender::new(connection_reqs_tx),
     );
@@ -94,13 +94,13 @@ pub fn test_state_sync_msg_fuzzer_impl(msg: StateSynchronizerMsg) {
     });
 }
 
-pub fn state_sync_msg_strategy() -> impl Strategy<Value = StateSynchronizerMsg> {
+pub fn state_sync_msg_strategy() -> impl Strategy<Value = StateSyncMessage> {
     prop_oneof![
         (any::<GetChunkRequest>()).prop_map(|get_chunk_request| {
-            StateSynchronizerMsg::GetChunkRequest(Box::new(get_chunk_request))
+            StateSyncMessage::GetChunkRequest(Box::new(get_chunk_request))
         }),
         (any::<GetChunkResponse>()).prop_map(|get_chunk_response| {
-            StateSynchronizerMsg::GetChunkResponse(Box::new(get_chunk_response))
+            StateSyncMessage::GetChunkResponse(Box::new(get_chunk_response))
         })
     ]
 }

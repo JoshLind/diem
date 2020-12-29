@@ -7,7 +7,7 @@ use crate::{
     counters,
     executor_proxy::ExecutorProxyTrait,
     logging::{LogEntry, LogEvent, LogSchema},
-    network::{StateSynchronizerEvents, StateSynchronizerMsg, StateSynchronizerSender},
+    network::{StateSyncEvents, StateSyncMessage, StateSyncSender},
     request_manager::RequestManager,
     state_sync::SyncingState,
 };
@@ -181,7 +181,7 @@ pub(crate) struct SyncCoordinator<T> {
     // waypoint a node is not going to be abl
     waypoint: Waypoint,
     // network senders - (k, v) = (network ID, network sender)
-    network_senders: HashMap<NodeNetworkId, StateSynchronizerSender>,
+    network_senders: HashMap<NodeNetworkId, StateSyncSender>,
     // Actor for sending chunk requests
     // Manages to whom and how to send chunk requests
     request_manager: RequestManager,
@@ -202,7 +202,7 @@ impl<T: ExecutorProxyTrait> SyncCoordinator<T> {
     pub fn new(
         client_events: mpsc::UnboundedReceiver<CoordinatorMessage>,
         state_sync_to_mempool_sender: mpsc::Sender<CommitNotification>,
-        network_senders: HashMap<NodeNetworkId, StateSynchronizerSender>,
+        network_senders: HashMap<NodeNetworkId, StateSyncSender>,
         role: RoleType,
         waypoint: Waypoint,
         config: StateSyncConfig,
@@ -248,11 +248,7 @@ impl<T: ExecutorProxyTrait> SyncCoordinator<T> {
     /// main routine. starts sync coordinator that listens for CoordinatorMsg
     pub async fn start(
         mut self,
-        network_handles: Vec<(
-            NodeNetworkId,
-            StateSynchronizerSender,
-            StateSynchronizerEvents,
-        )>,
+        network_handles: Vec<(NodeNetworkId, StateSyncSender, StateSyncEvents)>,
     ) {
         info!(LogSchema::new(LogEntry::RuntimeStart));
         let mut interval = interval(Duration::from_millis(self.config.tick_interval_ms)).fuse();
@@ -328,13 +324,9 @@ impl<T: ExecutorProxyTrait> SyncCoordinator<T> {
         }
     }
 
-    pub(crate) async fn process_one_message(
-        &mut self,
-        peer: PeerNetworkId,
-        msg: StateSynchronizerMsg,
-    ) {
+    pub(crate) async fn process_one_message(&mut self, peer: PeerNetworkId, msg: StateSyncMessage) {
         match msg {
-            StateSynchronizerMsg::GetChunkRequest(request) => {
+            StateSyncMessage::GetChunkRequest(request) => {
                 let _timer = counters::PROCESS_MSG_LATENCY
                     .with_label_values(&[
                         &peer.raw_network_id().to_string(),
@@ -363,7 +355,7 @@ impl<T: ExecutorProxyTrait> SyncCoordinator<T> {
                     ])
                     .inc();
             }
-            StateSynchronizerMsg::GetChunkResponse(response) => {
+            StateSyncMessage::GetChunkResponse(response) => {
                 let _timer = counters::PROCESS_MSG_LATENCY
                     .with_label_values(&[
                         &peer.raw_network_id().to_string(),
@@ -793,7 +785,7 @@ impl<T: ExecutorProxyTrait> SyncCoordinator<T> {
         let log = LogSchema::event_log(LogEntry::ProcessChunkRequest, LogEvent::DeliverChunk)
             .chunk_response(chunk_response.clone())
             .peer(&peer);
-        let msg = StateSynchronizerMsg::GetChunkResponse(Box::new(chunk_response));
+        let msg = StateSyncMessage::GetChunkResponse(Box::new(chunk_response));
 
         let network_sender = self
             .network_senders

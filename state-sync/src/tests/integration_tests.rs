@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    network::{StateSynchronizerEvents, StateSynchronizerMsg, StateSynchronizerSender},
+    network::{StateSyncEvents, StateSyncMessage, StateSyncSender},
     state_sync::{StateSync, StateSyncClient},
     tests::{
         helpers::{MockExecutorProxy, MockRpcHandler, SynchronizerEnvHelper},
@@ -204,12 +204,11 @@ impl SynchronizerEnv {
                 let (network_notifs_tx, network_notifs_rx) =
                     diem_channel::new(QueueStyle::LIFO, NonZeroUsize::new(1).unwrap(), None);
                 let (conn_status_tx, conn_status_rx) = conn_notifs_channel::new();
-                let network_sender = StateSynchronizerSender::new(
+                let network_sender = StateSyncSender::new(
                     PeerManagerRequestSender::new(network_reqs_tx),
                     ConnectionRequestSender::new(connection_reqs_tx),
                 );
-                let network_events =
-                    StateSynchronizerEvents::new(network_notifs_rx, conn_status_rx);
+                let network_events = StateSyncEvents::new(network_notifs_rx, conn_status_rx);
                 self.network_reqs_rxs.insert(peer_id, network_reqs_rx);
                 self.network_notifs_txs.insert(peer_id, network_notifs_tx);
                 self.network_conn_event_notifs_txs
@@ -449,29 +448,29 @@ impl SynchronizerEnv {
     }
 }
 
-fn check_chunk_request(msg: StateSynchronizerMsg, known_version: u64, target_version: Option<u64>) {
+fn check_chunk_request(msg: StateSyncMessage, known_version: u64, target_version: Option<u64>) {
     match msg {
-        StateSynchronizerMsg::GetChunkRequest(req) => {
+        StateSyncMessage::GetChunkRequest(req) => {
             assert_eq!(req.known_version, known_version);
             assert_eq!(req.target.version(), target_version);
         }
-        StateSynchronizerMsg::GetChunkResponse(_) => {
+        StateSyncMessage::GetChunkResponse(_) => {
             panic!("received chunk response when expecting chunk request");
         }
     }
 }
 
 fn check_chunk_response(
-    msg: StateSynchronizerMsg,
+    msg: StateSyncMessage,
     response_li_version: u64,
     chunk_start_version: u64,
     chunk_length: usize,
 ) {
     match msg {
-        StateSynchronizerMsg::GetChunkRequest(_) => {
+        StateSyncMessage::GetChunkRequest(_) => {
             panic!("received chunk response when expecting chunk request");
         }
-        StateSynchronizerMsg::GetChunkResponse(resp) => {
+        StateSyncMessage::GetChunkResponse(resp) => {
             assert_eq!(resp.response_li.version(), response_li_version);
             assert_eq!(
                 resp.txn_list_with_proof.first_transaction_version.unwrap(),
@@ -791,13 +790,11 @@ fn test_lagging_upstream_long_poll() {
 
     let (_, msg) = env.deliver_msg(full_node_vfn_network);
     // expected: known_version 0, epoch 1, no target LI version
-    let req: StateSynchronizerMsg =
-        bcs::from_bytes(&msg.mdata).expect("failed bcs deserialization");
+    let req: StateSyncMessage = bcs::from_bytes(&msg.mdata).expect("failed bcs deserialization");
     check_chunk_request(req, 0, None);
 
     let (_, msg) = env.deliver_msg(validator);
-    let resp: StateSynchronizerMsg =
-        bcs::from_bytes(&msg.mdata).expect("failed bcs deserialization");
+    let resp: StateSyncMessage = bcs::from_bytes(&msg.mdata).expect("failed bcs deserialization");
     check_chunk_response(resp, 400, 1, 250);
     env.wait_for_version(1, 250, None);
 
@@ -808,8 +805,7 @@ fn test_lagging_upstream_long_poll() {
 
     // full_node sends chunk request to failover upstream for known_version 250 and target LI 400
     let (_, msg) = env.deliver_msg(full_node_failover_network);
-    let msg: StateSynchronizerMsg =
-        bcs::from_bytes(&msg.mdata).expect("failed bcs deserialization");
+    let msg: StateSyncMessage = bcs::from_bytes(&msg.mdata).expect("failed bcs deserialization");
     check_chunk_request(msg, 250, Some(400));
 
     // update failover VFN from lagging state to updated state
@@ -829,32 +825,27 @@ fn test_lagging_upstream_long_poll() {
     env.commit(0, 600);
     // failover fn sends chunk request to validator
     let (_, msg) = env.deliver_msg(failover_fn_vfn_network);
-    let msg: StateSynchronizerMsg =
-        bcs::from_bytes(&msg.mdata).expect("failed bcs deserialization");
+    let msg: StateSyncMessage = bcs::from_bytes(&msg.mdata).expect("failed bcs deserialization");
     check_chunk_request(msg, 500, None);
     let (_, msg) = env.deliver_msg(validator);
-    let resp: StateSynchronizerMsg =
-        bcs::from_bytes(&msg.mdata).expect("failed bcs deserialization");
+    let resp: StateSyncMessage = bcs::from_bytes(&msg.mdata).expect("failed bcs deserialization");
     check_chunk_response(resp, 600, 501, 100);
 
     // failover sends long-poll subscription to fullnode
     let (_, msg) = env.deliver_msg(failover_fn);
-    let resp: StateSynchronizerMsg =
-        bcs::from_bytes(&msg.mdata).expect("failed bcs deserialization");
+    let resp: StateSyncMessage = bcs::from_bytes(&msg.mdata).expect("failed bcs deserialization");
     check_chunk_response(resp, 600, 251, 250);
 
     // full_node sends chunk request to failover upstream for known_version 250 and target LI 400
     let (_, msg) = env.deliver_msg(full_node_failover_network);
-    let msg: StateSynchronizerMsg =
-        bcs::from_bytes(&msg.mdata).expect("failed bcs deserialization");
+    let msg: StateSyncMessage = bcs::from_bytes(&msg.mdata).expect("failed bcs deserialization");
     // here we check that the next requested version is not the older target LI 400 - that should be
     // pruned out from PendingLedgerInfos since it becomes outdated after the known_version advances to 500
     check_chunk_request(msg, 500, None);
 
     // check that fullnode successfully finishes sync to 600
     let (_, msg) = env.deliver_msg(failover_fn);
-    let resp: StateSynchronizerMsg =
-        bcs::from_bytes(&msg.mdata).expect("failed bcs deserialization");
+    let resp: StateSyncMessage = bcs::from_bytes(&msg.mdata).expect("failed bcs deserialization");
     check_chunk_response(resp, 600, 501, 100);
     env.wait_for_version(1, 600, Some(600));
 }

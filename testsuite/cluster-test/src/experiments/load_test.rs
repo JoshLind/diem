@@ -21,7 +21,7 @@ use network::{
     connectivity_manager::DiscoverySource, protocols::network::Event, ConnectivityRequest,
 };
 use network_builder::builder::NetworkBuilder;
-use state_sync::network::{StateSynchronizerEvents, StateSynchronizerSender};
+use state_sync::network::{StateSyncEvents, StateSyncSender};
 use std::{
     collections::{HashMap, HashSet},
     fmt,
@@ -241,7 +241,7 @@ async fn get_stubbed_nodes(
 // that interact with the remote VFN via DiemNet mempool and state sync protocol
 struct StubbedNode {
     pub mempool_handle: Option<(MempoolNetworkSender, MempoolNetworkEvents)>,
-    pub state_sync_handle: Option<(StateSynchronizerSender, StateSynchronizerEvents)>,
+    pub state_sync_handle: Option<(StateSyncSender, StateSyncEvents)>,
 }
 
 impl StubbedNode {
@@ -413,8 +413,8 @@ impl fmt::Display for MempoolStatsRate {
 
 async fn state_sync_load_test(
     duration: Duration,
-    mut sender: StateSynchronizerSender,
-    mut events: StateSynchronizerEvents,
+    mut sender: StateSyncSender,
+    mut events: StateSyncEvents,
 ) -> Result<StateSyncStats> {
     let new_peer_event = events.select_next_some().await;
     let vfn = if let Event::NewPeer(peer_id, _) = new_peer_event {
@@ -440,9 +440,8 @@ async fn state_sync_load_test(
     let mut bytes = 0_u64;
     let mut msg_num = 0_u64;
     while Instant::now().duration_since(task_start) < duration {
-        let msg = state_sync::network::StateSynchronizerMsg::GetChunkRequest(Box::new(
-            chunk_request.clone(),
-        ));
+        let msg =
+            state_sync::network::StateSyncMessage::GetChunkRequest(Box::new(chunk_request.clone()));
         bytes += bcs::to_bytes(&msg)?.len() as u64;
         msg_num += 1;
         sender.send_to(vfn, msg)?;
@@ -450,8 +449,7 @@ async fn state_sync_load_test(
         // await response from remote peer
         let response = events.select_next_some().await;
         if let Event::Message(_remote_peer, payload) = response {
-            if let state_sync::network::StateSynchronizerMsg::GetChunkResponse(chunk_response) =
-                payload
+            if let state_sync::network::StateSyncMessage::GetChunkResponse(chunk_response) = payload
             {
                 // TODO analyze response and update StateSyncResult with stats accordingly
                 served_txns += chunk_response.txn_list_with_proof.transactions.len() as u64;
