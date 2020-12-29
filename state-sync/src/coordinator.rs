@@ -39,7 +39,7 @@ use std::{
 use tokio::time::{interval, timeout};
 
 pub struct SyncRequest {
-    // The Result value returned to the caller is Error in case the StateSynchronizer failed to
+    // The Result value returned to the caller is Error in case the StateSync failed to
     // reach the target (the LI in the storage remains unchanged as if nothing happened).
     pub callback: oneshot::Sender<Result<()>>,
     pub target: LedgerInfoWithSignatures,
@@ -156,7 +156,7 @@ impl PendingLedgerInfos {
     }
 }
 
-/// Coordination of synchronization process is driven by SyncCoordinator, which `start()` function
+/// Coordination of synchronization process is driven by StateSyncCoordinator, which `start()` function
 /// runs an infinite event loop and triggers actions based on external / internal requests.
 /// The coordinator can work in two modes:
 /// * FullNode: infinite stream of ChunkRequests is sent to the predefined static peers
@@ -170,7 +170,7 @@ pub(crate) struct StateSyncCoordinator<T> {
     // used to send messages (e.g. notifications about newly committed txns) to mempool
     state_sync_to_mempool_sender: mpsc::Sender<CommitNotification>,
     // Current state of the storage, which includes both the latest committed transaction and the
-    // latest transaction covered by the LedgerInfo (see `SynchronizerState` documentation).
+    // latest transaction covered by the LedgerInfo (see `SyncingState` documentation).
     // The state is updated via syncing with the local storage.
     local_state: SyncingState,
     // config
@@ -405,7 +405,7 @@ impl<T: ExecutorProxyTrait> StateSyncCoordinator<T> {
     /// The caller will be notified about request completion via request.callback oneshot:
     /// at that moment it's guaranteed that the highest LI exposed by the storage is equal to the
     /// target LI.
-    /// StateSynchronizer assumes that it's the only one modifying the storage (consensus is not
+    /// StateSync assumes that it's the only one modifying the storage (consensus is not
     /// trying to commit transactions concurrently).
     fn request_sync(&mut self, request: SyncRequest) -> Result<()> {
         fail_point!("state_sync::request_sync", |_| {
@@ -1148,7 +1148,7 @@ impl<T: ExecutorProxyTrait> StateSyncCoordinator<T> {
             .execute_chunk(txn_list_with_proof, target, intermediate_end_of_epoch_li)
     }
 
-    /// Ensures that StateSynchronizer is making progress:
+    /// Ensures that StateSync is making progress:
     /// * kick-starts initial sync process (= initialization syncing to waypoint)
     /// * issue a new request if too much time passed since requesting highest_synced_version + 1.
     fn check_progress(&mut self) {

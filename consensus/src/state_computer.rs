@@ -81,7 +81,7 @@ impl StateComputer for ExecutionProxy {
                 .commit(committed_txns, reconfig_events)
                 .await
         ) {
-            error!(error = ?e, "Failed to notify state synchronizer");
+            error!(error = ?e, "Failed to notify state sync");
         }
         Ok(())
     }

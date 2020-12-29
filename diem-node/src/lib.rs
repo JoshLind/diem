@@ -418,7 +418,7 @@ pub fn setup_environment(node_config: &NodeConfig, logger: Option<Arc<Logger>>) 
     // for state sync to send requests to mempool
     let (state_sync_to_mempool_sender, state_sync_requests) =
         channel(INTRA_NODE_CHANNEL_BUFFER_SIZE);
-    let state_synchronizer = StateSync::bootstrap(
+    let state_sync = StateSync::bootstrap(
         state_sync_network_handles,
         state_sync_to_mempool_sender,
         Arc::clone(&db_rw.reader),
@@ -455,7 +455,7 @@ pub fn setup_environment(node_config: &NodeConfig, logger: Option<Arc<Logger>>) 
         // TODO: Note that we need the networking layer to be able to discover & connect to the
         // peers with potentially outdated network identity public keys.
         debug!("Wait until state synchronizer is initialized");
-        block_on(state_synchronizer.wait_until_initialized())
+        block_on(state_sync.wait_until_initialized())
             .expect("State synchronizer initialization failure");
         debug!("State synchronizer initialization complete.");
 
@@ -465,7 +465,7 @@ pub fn setup_environment(node_config: &NodeConfig, logger: Option<Arc<Logger>>) 
             node_config,
             consensus_network_sender,
             consensus_network_events,
-            state_synchronizer.create_client(),
+            state_sync.create_client(),
             consensus_to_mempool_sender,
             diem_db,
             consensus_reconfig_events,
@@ -483,7 +483,7 @@ pub fn setup_environment(node_config: &NodeConfig, logger: Option<Arc<Logger>>) 
         network_runtimes,
         _rpc: rpc_runtime,
         _mempool: mempool,
-        _state_sync: state_synchronizer,
+        _state_sync: state_sync,
         _consensus_runtime: consensus_runtime,
         _debug: debug_if,
         _backup: backup_service,

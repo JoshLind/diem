@@ -1,7 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-//! Interface between StateSynchronizer and Network layers.
+//! Interface between StateSync and Network layers.
 
 use crate::{chunk_request::GetChunkRequest, chunk_response::GetChunkResponse, counters};
 use channel::message_queues::QueueStyle;
@@ -67,7 +67,7 @@ impl StateSyncSender {
     }
 }
 
-/// Configuration for the network endpoints to support StateSynchronizer.
+/// Configuration for the network endpoints to support StateSync.
 pub fn network_endpoint_config() -> (
     Vec<ProtocolId>,
     Vec<ProtocolId>,
@@ -80,6 +80,6 @@ pub fn network_endpoint_config() -> (
         vec![ProtocolId::StateSynchronizerDirectSend],
         QueueStyle::LIFO,
         STATE_SYNC_MAX_BUFFER_SIZE,
-        Some(&counters::PENDING_STATE_SYNCHRONIZER_NETWORK_EVENTS),
+        Some(&counters::PENDING_STATE_SYNC_NETWORK_EVENTS),
     )
 }
