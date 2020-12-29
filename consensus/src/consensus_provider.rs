@@ -18,7 +18,7 @@ use diem_mempool::ConsensusRequest;
 use diem_types::on_chain_config::OnChainConfigPayload;
 use execution_correctness::ExecutionCorrectnessManager;
 use futures::channel::mpsc;
-use state_sync::StateSynchronizerClient;
+use state_sync::StateSyncClient;
 use std::sync::Arc;
 use storage_interface::DbReader;
 use tokio::runtime::{self, Runtime};
@@ -28,7 +28,7 @@ pub fn start_consensus(
     node_config: &NodeConfig,
     network_sender: ConsensusNetworkSender,
     network_events: ConsensusNetworkEvents,
-    state_sync_client: StateSynchronizerClient,
+    state_sync_client: StateSyncClient,
     consensus_to_mempool_sender: mpsc::Sender<ConsensusRequest>,
     diem_db: Arc<dyn DbReader>,
     reconfig_events: diem_channel::Receiver<(), OnChainConfigPayload>,

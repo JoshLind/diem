@@ -3,7 +3,7 @@
 
 use crate::{
     network::{StateSynchronizerEvents, StateSynchronizerMsg, StateSynchronizerSender},
-    state_sync::{StateSynchronizer, StateSynchronizerClient},
+    state_sync::{StateSync, StateSyncClient},
     tests::{
         helpers::{MockExecutorProxy, MockRpcHandler, SynchronizerEnvHelper},
         mock_storage::MockStorage,
@@ -53,8 +53,8 @@ use tokio::runtime::Runtime;
 
 struct SynchronizerEnv {
     runtime: Runtime,
-    synchronizers: Vec<StateSynchronizer>,
-    clients: Vec<StateSynchronizerClient>,
+    synchronizers: Vec<StateSync>,
+    clients: Vec<StateSyncClient>,
     storage_proxies: Vec<Arc<RwLock<MockStorage>>>, // to directly modify peers storage
     signers: Vec<ValidatorSigner>,
     network_keys: Vec<x25519::PrivateKey>,
@@ -267,7 +267,7 @@ impl SynchronizerEnv {
             self.signers[new_peer_idx].clone(),
         )));
         let (mempool_channel, mempool_requests) = futures::channel::mpsc::channel(1_024);
-        let synchronizer = StateSynchronizer::bootstrap_with_executor_proxy(
+        let synchronizer = StateSync::bootstrap_with_executor_proxy(
             Runtime::new().unwrap(),
             network_handles,
             mempool_channel,

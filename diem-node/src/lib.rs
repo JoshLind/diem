@@ -23,7 +23,7 @@ use executor::{db_bootstrapper::maybe_bootstrap, Executor};
 use executor_types::ChunkExecutor;
 use futures::{channel::mpsc::channel, executor::block_on};
 use network_builder::builder::NetworkBuilder;
-use state_sync::StateSynchronizer;
+use state_sync::StateSync;
 use std::{
     boxed::Box,
     convert::TryFrom,
@@ -47,7 +47,7 @@ const MEMPOOL_NETWORK_CHANNEL_BUFFER_SIZE: usize = 1_024;
 pub struct DiemHandle {
     _rpc: Runtime,
     _mempool: Runtime,
-    _state_synchronizer: StateSynchronizer,
+    _state_synchronizer: StateSync,
     network_runtimes: Vec<Runtime>,
     _consensus_runtime: Option<Runtime>,
     _debug: NodeDebugService,
@@ -418,7 +418,7 @@ pub fn setup_environment(node_config: &NodeConfig, logger: Option<Arc<Logger>>) 
     // for state sync to send requests to mempool
     let (state_sync_to_mempool_sender, state_sync_requests) =
         channel(INTRA_NODE_CHANNEL_BUFFER_SIZE);
-    let state_synchronizer = StateSynchronizer::bootstrap(
+    let state_synchronizer = StateSync::bootstrap(
         state_sync_network_handles,
         state_sync_to_mempool_sender,
         Arc::clone(&db_rw.reader),
