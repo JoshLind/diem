@@ -35,7 +35,7 @@ use tokio::{
     time::timeout,
 };
 
-/// SynchronizationState contains the following fields:
+/// SyncingState contains the following fields:
 /// * `committed_ledger_info` holds the latest certified ledger info (committed to storage),
 ///    i.e., the ledger info for the highest version for which storage has all ledger state.
 /// * `synced_trees` holds the latest transaction accumulator and state tree (which may
@@ -49,13 +49,13 @@ use tokio::{
 /// it corresponds to the highest version we have a proof for in storage). `synced_trees`
 /// is used locally for retrieving missing chunks for the local storage.
 #[derive(Clone)]
-pub struct SynchronizationState {
+pub struct SyncingState {
     committed_ledger_info: LedgerInfoWithSignatures,
     synced_trees: ExecutedTrees,
     trusted_epoch_state: EpochState,
 }
 
-impl SynchronizationState {
+impl SyncingState {
     pub fn new(
         committed_ledger_info: LedgerInfoWithSignatures,
         synced_trees: ExecutedTrees,
@@ -67,7 +67,7 @@ impl SynchronizationState {
             .cloned()
             .unwrap_or(current_epoch_state);
 
-        SynchronizationState {
+        SyncingState {
             committed_ledger_info,
             synced_trees,
             trusted_epoch_state,
@@ -271,7 +271,7 @@ impl StateSyncClient {
     /// Returns information about StateSynchronizer internal state. This should only
     /// be used by tests.
     #[cfg(test)]
-    pub fn get_state(&self) -> impl Future<Output = Result<SynchronizationState>> {
+    pub fn get_state(&self) -> impl Future<Output = Result<SyncingState>> {
         let mut sender = self.coordinator_sender.clone();
         let (cb_sender, cb_receiver) = oneshot::channel();
         async move {

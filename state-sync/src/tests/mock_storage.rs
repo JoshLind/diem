@@ -1,7 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::state_sync::SynchronizationState;
+use crate::state_sync::SyncingState;
 use anyhow::{bail, Result};
 use diem_crypto::HashValue;
 #[cfg(test)]
@@ -93,8 +93,8 @@ impl MockStorage {
         self.ledger_infos.get(&epoch_with_li).unwrap().clone()
     }
 
-    pub fn get_local_storage_state(&self) -> SynchronizationState {
-        SynchronizationState::new(
+    pub fn get_local_storage_state(&self) -> SyncingState {
+        SyncingState::new(
             self.highest_local_li(),
             self.synced_trees().clone(),
             self.epoch_state.clone(),

@@ -4,7 +4,7 @@
 use crate::{
     counters,
     logging::{LogEntry, LogEvent, LogSchema},
-    state_sync::SynchronizationState,
+    state_sync::SyncingState,
 };
 use anyhow::{format_err, Result};
 use diem_logger::prelude::*;
@@ -25,7 +25,7 @@ use subscription_service::ReconfigSubscription;
 /// Proxies interactions with execution and storage for state synchronization
 pub trait ExecutorProxyTrait: Send {
     /// Sync the local state with the latest in storage.
-    fn get_local_storage_state(&self) -> Result<SynchronizationState>;
+    fn get_local_storage_state(&self) -> Result<SyncingState>;
 
     /// Execute and commit a batch of transactions
     fn execute_chunk(
@@ -122,7 +122,7 @@ impl ExecutorProxy {
 }
 
 impl ExecutorProxyTrait for ExecutorProxy {
-    fn get_local_storage_state(&self) -> Result<SynchronizationState> {
+    fn get_local_storage_state(&self) -> Result<SyncingState> {
         let storage_info = self
             .storage
             .get_startup_info()?
@@ -136,7 +136,7 @@ impl ExecutorProxyTrait for ExecutorProxy {
             ExecutedTrees::from(storage_info.committed_tree_state)
         };
 
-        Ok(SynchronizationState::new(
+        Ok(SyncingState::new(
             storage_info.latest_ledger_info,
             synced_trees,
             current_epoch_state,
