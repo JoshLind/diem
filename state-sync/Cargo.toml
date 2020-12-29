@@ -1,5 +1,5 @@
 [package]
-name = "state-synchronizer"
+name = "state-sync"
 version = "0.1.0"
 authors = ["Diem Association <opensource@diem.com>"]
 description = "Diem state synchronizer"
