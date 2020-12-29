@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    executor_proxy::ExecutorProxyTrait, state_sync::SyncingState,
-    tests::mock_storage::MockStorage,
+    executor_proxy::ExecutorProxyTrait, state_sync::SyncingState, tests::mock_storage::MockStorage,
 };
 use anyhow::Result;
 use diem_config::config::HANDSHAKE_VERSION;

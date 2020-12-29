@@ -19,17 +19,17 @@ use std::boxed::Box;
 /// implements StateComputer traits.
 pub struct ExecutionProxy {
     execution_correctness_client: Mutex<Box<dyn ExecutionCorrectness + Send + Sync>>,
-    synchronizer: StateSyncClient,
+    state_sync_client: StateSyncClient,
 }
 
 impl ExecutionProxy {
     pub fn new(
         execution_correctness_client: Box<dyn ExecutionCorrectness + Send + Sync>,
-        synchronizer: StateSyncClient,
+        state_sync_client: StateSyncClient,
     ) -> Self {
         Self {
             execution_correctness_client: Mutex::new(execution_correctness_client),
-            synchronizer,
+            state_sync_client,
         }
     }
 }
@@ -77,7 +77,7 @@ impl StateComputer for ExecutionProxy {
         );
         if let Err(e) = monitor!(
             "notify_state_sync",
-            self.synchronizer
+            self.state_sync_client
                 .commit(committed_txns, reconfig_events)
                 .await
         ) {
@@ -96,7 +96,7 @@ impl StateComputer for ExecutionProxy {
         // commitments, the the sync state of ChunkExecutor may be not up to date so
         // it is required to reset the cache of ChunkExecutor in StateSynchronizer
         // when requested to sync.
-        let res = monitor!("sync_to", self.synchronizer.sync_to(target).await);
+        let res = monitor!("sync_to", self.state_sync_client.sync_to(target).await);
         // Similarily, after the state synchronization, we have to reset the cache
         // of BlockExecutor to guarantee the latest committed state is up to date.
         self.execution_correctness_client.lock().reset()?;

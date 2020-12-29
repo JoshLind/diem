@@ -47,7 +47,7 @@ const MEMPOOL_NETWORK_CHANNEL_BUFFER_SIZE: usize = 1_024;
 pub struct DiemHandle {
     _rpc: Runtime,
     _mempool: Runtime,
-    _state_synchronizer: StateSync,
+    _state_sync: StateSync,
     network_runtimes: Vec<Runtime>,
     _consensus_runtime: Option<Runtime>,
     _debug: NodeDebugService,
@@ -342,7 +342,7 @@ pub fn setup_environment(node_config: &NodeConfig, logger: Option<Arc<Logger>>) 
         let mut network_builder = NetworkBuilder::create(chain_id, role, network_config);
         let network_id = network_config.network_id.clone();
 
-        // Create the endpoints to connect the Network to StateSynchronizer.
+        // Create the endpoints to connect the Network to StateSync.
         let (state_sync_sender, state_sync_events) =
             network_builder.add_protocol_handler(state_sync::network::network_endpoint_config());
         state_sync_network_handles.push((
@@ -483,7 +483,7 @@ pub fn setup_environment(node_config: &NodeConfig, logger: Option<Arc<Logger>>) 
         network_runtimes,
         _rpc: rpc_runtime,
         _mempool: mempool,
-        _state_synchronizer: state_synchronizer,
+        _state_sync: state_synchronizer,
         _consensus_runtime: consensus_runtime,
         _debug: debug_if,
         _backup: backup_service,
