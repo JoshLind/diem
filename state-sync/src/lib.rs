@@ -7,7 +7,7 @@
 //! Used for node restarts, network partitions, full node syncs
 #![recursion_limit = "1024"]
 
-pub use self::state_synchronizer::{StateSynchronizer, StateSynchronizerClient};
+pub use self::state_sync::{StateSynchronizer, StateSynchronizerClient};
 
 pub mod chunk_request;
 pub mod chunk_response;
@@ -17,7 +17,7 @@ mod executor_proxy;
 mod logging;
 pub mod network;
 mod request_manager;
-mod state_synchronizer;
+mod state_sync;
 
 #[cfg(any(feature = "fuzzing", test))]
 mod tests;

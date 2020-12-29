@@ -3,7 +3,7 @@
 
 use crate::{
     network::{StateSynchronizerEvents, StateSynchronizerMsg, StateSynchronizerSender},
-    state_synchronizer::{StateSynchronizer, StateSynchronizerClient},
+    state_sync::{StateSynchronizer, StateSynchronizerClient},
     tests::{
         helpers::{MockExecutorProxy, MockRpcHandler, SynchronizerEnvHelper},
         mock_storage::MockStorage,

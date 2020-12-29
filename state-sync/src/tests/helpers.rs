@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    executor_proxy::ExecutorProxyTrait, state_synchronizer::SynchronizationState,
+    executor_proxy::ExecutorProxyTrait, state_sync::SynchronizationState,
     tests::mock_storage::MockStorage,
 };
 use anyhow::Result;

@@ -1,7 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::state_synchronizer::SynchronizationState;
+use crate::state_sync::SynchronizationState;
 use anyhow::{bail, Result};
 use diem_crypto::HashValue;
 #[cfg(test)]
