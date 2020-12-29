@@ -53,7 +53,7 @@ use tokio::runtime::Runtime;
 
 struct StateSyncEnv {
     runtime: Runtime,
-    synchronizers: Vec<StateSync>,
+    state_syncs: Vec<StateSync>,
     clients: Vec<StateSyncClient>,
     storage_proxies: Vec<Arc<RwLock<MockStorage>>>, // to directly modify peers storage
     signers: Vec<ValidatorSigner>,
@@ -105,7 +105,7 @@ impl StateSyncEnv {
 
         Self {
             runtime,
-            synchronizers: vec![],
+            state_syncs: vec![],
             clients: vec![],
             storage_proxies: vec![],
             signers,
@@ -122,7 +122,7 @@ impl StateSyncEnv {
         }
     }
 
-    fn start_next_synchronizer(
+    fn start_next_state_sync(
         &mut self,
         handler: MockRpcHandler,
         role: RoleType,
@@ -130,7 +130,7 @@ impl StateSyncEnv {
         mock_network: bool,
         upstream_networks: Option<Vec<NetworkId>>,
     ) {
-        self.setup_next_synchronizer(
+        self.setup_next_state_sync(
             handler,
             role,
             waypoint,
@@ -141,7 +141,7 @@ impl StateSyncEnv {
         );
     }
 
-    fn setup_next_synchronizer(
+    fn setup_next_state_sync(
         &mut self,
         handler: MockRpcHandler,
         role: RoleType,
@@ -151,7 +151,7 @@ impl StateSyncEnv {
         mock_network: bool,
         upstream_networks: Option<Vec<NetworkId>>,
     ) {
-        let new_peer_idx = self.synchronizers.len();
+        let new_peer_idx = self.state_syncs.len();
 
         // set up config
         let mut config = diem_config::config::NodeConfig::default_for_validator();
@@ -195,7 +195,7 @@ impl StateSyncEnv {
                 let peer_id = PeerId::random();
                 network_ids.push(peer_id);
 
-                // mock the StateSynchronizerEvents and StateSynchronizerSender to allow manually controlling
+                // mock the StateSyncEvents and StateSyncSender to allow manually controlling
                 // msg delivery in test
                 let (network_reqs_tx, network_reqs_rx) =
                     diem_channel::new(QueueStyle::LIFO, NonZeroUsize::new(1).unwrap(), None);
@@ -266,7 +266,7 @@ impl StateSyncEnv {
             self.signers[new_peer_idx].clone(),
         )));
         let (mempool_channel, mempool_requests) = futures::channel::mpsc::channel(1_024);
-        let synchronizer = StateSync::bootstrap_with_executor_proxy(
+        let state_sync = StateSync::bootstrap_with_executor_proxy(
             Runtime::new().unwrap(),
             network_handles,
             mempool_channel,
@@ -278,8 +278,8 @@ impl StateSyncEnv {
         );
         self.mempools
             .push(MockSharedMempool::new(Some(mempool_requests)));
-        let client = synchronizer.create_client();
-        self.synchronizers.push(synchronizer);
+        let client = state_sync.create_client();
+        self.state_syncs.push(state_sync);
         self.clients.push(client);
         self.storage_proxies.push(storage_proxy);
     }
@@ -348,7 +348,7 @@ impl StateSyncEnv {
     }
 
     fn wait_until_initialized(&self, peer_id: usize) -> Result<()> {
-        block_on(self.synchronizers[peer_id].wait_until_initialized())
+        block_on(self.state_syncs[peer_id].wait_until_initialized())
     }
 
     fn send_connection_event(
@@ -365,7 +365,7 @@ impl StateSyncEnv {
         conn_notifs_tx.push(sender, notif).unwrap();
     }
 
-    /// Delivers next message from peer with index `sender` in this SynchronizerEnv
+    /// Delivers next message from peer with index `sender` in this StateSyncEnv
     /// Returns the recipient of the msg
     fn deliver_msg(&mut self, sender: (usize, usize)) -> (PeerId, Message) {
         let sender_id = self.get_peer_network_id(sender);
@@ -484,14 +484,14 @@ fn check_chunk_response(
 #[test]
 fn test_basic_catch_up() {
     let mut env = StateSyncEnv::new(2);
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::Validator,
         Waypoint::default(),
         false,
         None,
     );
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::Validator,
         Waypoint::default(),
@@ -531,14 +531,14 @@ fn test_flaky_peer_sync() {
         }
     });
     let mut env = StateSyncEnv::new(2);
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::Validator,
         Waypoint::default(),
         false,
         None,
     );
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         handler,
         RoleType::Validator,
         Waypoint::default(),
@@ -556,14 +556,14 @@ fn test_request_timeout() {
     let handler =
         Box::new(move |_| -> Result<TransactionListWithProof> { bail!("chunk fetch failed") });
     let mut env = StateSyncEnv::new(2);
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         handler,
         RoleType::Validator,
         Waypoint::default(),
         false,
         None,
     );
-    env.setup_next_synchronizer(
+    env.setup_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::Validator,
         Waypoint::default(),
@@ -579,14 +579,14 @@ fn test_request_timeout() {
 #[test]
 fn test_full_node() {
     let mut env = StateSyncEnv::new(2);
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::Validator,
         Waypoint::default(),
         false,
         None,
     );
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::FullNode,
         Waypoint::default(),
@@ -605,14 +605,14 @@ fn test_full_node() {
 #[test]
 fn catch_up_through_epochs_validators() {
     let mut env = StateSyncEnv::new(2);
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::Validator,
         Waypoint::default(),
         false,
         None,
     );
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::Validator,
         Waypoint::default(),
@@ -644,7 +644,7 @@ fn catch_up_through_epochs_validators() {
 #[test]
 fn catch_up_through_epochs_full_node() {
     let mut env = StateSyncEnv::new(3);
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::Validator,
         Waypoint::default(),
@@ -658,7 +658,7 @@ fn catch_up_through_epochs_full_node() {
     }
     env.commit(0, 950); // At this point peer 0 is at epoch 10 and version 950
 
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::FullNode,
         Waypoint::default(),
@@ -669,7 +669,7 @@ fn catch_up_through_epochs_full_node() {
     assert_eq!(env.latest_li(1).ledger_info().epoch(), 10);
 
     // Peer 2 has peer 1 as its upstream, should catch up from it.
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::FullNode,
         Waypoint::default(),
@@ -683,7 +683,7 @@ fn catch_up_through_epochs_full_node() {
 #[test]
 fn catch_up_with_waypoints() {
     let mut env = StateSyncEnv::new(3);
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::Validator,
         Waypoint::default(),
@@ -707,7 +707,7 @@ fn catch_up_with_waypoints() {
     let waypoint_li = env.get_epoch_ending_ledger_info(0, 3500).unwrap();
     let waypoint = Waypoint::new_epoch_boundary(waypoint_li.ledger_info()).unwrap();
 
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::FullNode,
         waypoint,
@@ -723,7 +723,7 @@ fn catch_up_with_waypoints() {
     assert_eq!(env.latest_li(1).ledger_info().epoch(), 19);
 
     // Peer 2 has peer 1 as its upstream, should catch up from it.
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::FullNode,
         Waypoint::default(),
@@ -737,14 +737,14 @@ fn catch_up_with_waypoints() {
 #[test]
 fn test_lagging_upstream_long_poll() {
     let mut env = StateSyncEnv::new(4);
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::Validator,
         Waypoint::default(),
         true,
         None,
     );
-    env.setup_next_synchronizer(
+    env.setup_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::FullNode,
         Waypoint::default(),
@@ -753,7 +753,7 @@ fn test_lagging_upstream_long_poll() {
         true,
         Some(vec![NetworkId::vfn_network(), NetworkId::Public]),
     );
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::FullNode,
         Waypoint::default(),
@@ -762,7 +762,7 @@ fn test_lagging_upstream_long_poll() {
     );
     // we treat this a standalone node whose local state we use as the baseline
     // to clone state to the other nodes
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::Validator,
         Waypoint::default(),
@@ -854,14 +854,14 @@ fn test_lagging_upstream_long_poll() {
 #[test]
 fn test_sync_pending_ledger_infos() {
     let mut env = StateSyncEnv::new(2);
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::Validator,
         Waypoint::default(),
         true,
         None,
     );
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::FullNode,
         Waypoint::default(),
@@ -930,14 +930,14 @@ fn test_sync_pending_ledger_infos() {
 #[ignore] // TODO: https://github.com/diem/diem/issues/5771
 fn test_fn_failover() {
     let mut env = StateSyncEnv::new(5);
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::Validator,
         Waypoint::default(),
         true,
         None,
     );
-    env.setup_next_synchronizer(
+    env.setup_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::FullNode,
         Waypoint::default(),
@@ -949,7 +949,7 @@ fn test_fn_failover() {
 
     // start up 3 publicly available VFN
     for _ in 0..3 {
-        env.start_next_synchronizer(
+        env.start_next_state_sync(
             StateSyncEnv::default_handler(),
             RoleType::FullNode,
             Waypoint::default(),
@@ -1169,7 +1169,7 @@ fn test_fn_failover() {
 #[ignore]
 fn test_multicast_failover() {
     let mut env = StateSyncEnv::new(4);
-    env.start_next_synchronizer(
+    env.start_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::Validator,
         Waypoint::default(),
@@ -1180,7 +1180,7 @@ fn test_multicast_failover() {
     // set up node with more than 2 upstream networks, which is more than in standard prod setting
     // just to be safe
     let multicast_timeout_ms = 5_000;
-    env.setup_next_synchronizer(
+    env.setup_next_state_sync(
         StateSyncEnv::default_handler(),
         RoleType::FullNode,
         Waypoint::default(),
@@ -1196,7 +1196,7 @@ fn test_multicast_failover() {
 
     // setup the other FN upstream peer
     for _ in 0..2 {
-        env.start_next_synchronizer(
+        env.start_next_state_sync(
             StateSyncEnv::default_handler(),
             RoleType::FullNode,
             Waypoint::default(),
