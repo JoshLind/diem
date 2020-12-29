@@ -156,7 +156,7 @@ impl PendingLedgerInfos {
     }
 }
 
-/// Coordination of synchronization process is driven by StateSyncCoordinator, which `start()` function
+/// Coordination of the state sync process is driven by StateSyncCoordinator, which `start()` function
 /// runs an infinite event loop and triggers actions based on external / internal requests.
 /// The coordinator can work in two modes:
 /// * FullNode: infinite stream of ChunkRequests is sent to the predefined static peers

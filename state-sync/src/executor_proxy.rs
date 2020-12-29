@@ -22,7 +22,7 @@ use std::{collections::HashSet, convert::TryFrom, sync::Arc};
 use storage_interface::DbReader;
 use subscription_service::ReconfigSubscription;
 
-/// Proxies interactions with execution and storage for state synchronization
+/// Proxies interactions with execution and storage for state sync
 pub trait ExecutorProxyTrait: Send {
     /// Sync the local state with the latest in storage.
     fn get_local_storage_state(&self) -> Result<SyncingState>;

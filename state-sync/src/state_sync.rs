@@ -121,7 +121,7 @@ impl StateSync {
             .threaded_scheduler()
             .enable_all()
             .build()
-            .expect("[state synchronizer] failed to create runtime");
+            .expect("[state sync] failed to create runtime");
 
         let executor_proxy = ExecutorProxy::new(storage, executor, reconfig_event_subscriptions);
         Self::bootstrap_with_executor_proxy(
@@ -181,7 +181,7 @@ impl StateSync {
         StateSyncClient::new(self.coordinator_sender.clone())
     }
 
-    /// The function returns a future that is fulfilled when the state synchronizer is
+    /// The function returns a future that is fulfilled when state sync is
     /// caught up with the waypoint specified in the local config.
     pub async fn wait_until_initialized(&self) -> Result<()> {
         let mut sender = self.coordinator_sender.clone();
@@ -206,7 +206,7 @@ impl StateSyncClient {
     /// In case of success (`Result::Ok`) the LI of storage is at the given target.
     /// In case of failure (`Result::Error`) the LI of storage remains unchanged, and the validator
     /// can assume there were no modifications to the storage made.
-    /// It is up to state synchronizer to decide about the specific criteria for the failure
+    /// It is up to state sync to decide about the specific criteria for the failure
     /// (e.g., lack of progress with all of the peer validators).
     pub fn sync_to(&self, target: LedgerInfoWithSignatures) -> impl Future<Output = Result<()>> {
         let mut sender = self.coordinator_sender.clone();
@@ -224,7 +224,7 @@ impl StateSyncClient {
         }
     }
 
-    /// Notifies state synchronizer about newly committed transactions.
+    /// Notifies state sync about newly committed transactions.
     pub fn commit(
         &self,
         committed_txns: Vec<Transaction>,
@@ -246,7 +246,7 @@ impl StateSyncClient {
                     counters::COMMIT_FLOW_FAIL
                         .with_label_values(&[counters::STATE_SYNC_LABEL])
                         .inc();
-                    Err(format_err!("[state sync client] failed to receive commit ACK from state synchronizer on time"))
+                    Err(format_err!("[state sync client] failed to receive commit ACK from state sync on time"))
                 }
                 Ok(resp) => {
                     let CommitResponse { msg } = resp??;
@@ -260,7 +260,7 @@ impl StateSyncClient {
         }
     }
 
-    /// Returns information about StateSynchronizer internal state. This should only
+    /// Returns information about StateSync internal state. This should only
     /// be used by tests.
     #[cfg(test)]
     pub fn get_state(&self) -> impl Future<Output = Result<SyncingState>> {
