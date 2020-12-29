@@ -164,7 +164,7 @@ impl PendingLedgerInfos {
 /// higher within the timeout interval).
 /// * Validator: the ChunkRequests are generated on demand for a specific target LedgerInfo to
 /// synchronize to.
-pub(crate) struct SyncCoordinator<T> {
+pub(crate) struct StateSyncCoordinator<T> {
     // used to process client requests
     client_events: mpsc::UnboundedReceiver<CoordinatorMessage>,
     // used to send messages (e.g. notifications about newly committed txns) to mempool
@@ -198,7 +198,7 @@ pub(crate) struct SyncCoordinator<T> {
     executor_proxy: T,
 }
 
-impl<T: ExecutorProxyTrait> SyncCoordinator<T> {
+impl<T: ExecutorProxyTrait> StateSyncCoordinator<T> {
     pub fn new(
         client_events: mpsc::UnboundedReceiver<CoordinatorMessage>,
         state_sync_to_mempool_sender: mpsc::Sender<CommitNotification>,

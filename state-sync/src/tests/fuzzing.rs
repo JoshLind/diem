@@ -4,7 +4,7 @@
 use crate::{
     chunk_request::{GetChunkRequest, TargetType},
     chunk_response::{GetChunkResponse, ResponseLedgerInfo},
-    coordinator::SyncCoordinator,
+    coordinator::StateSyncCoordinator,
     network::{StateSyncMessage, StateSyncSender},
     tests::{
         helpers::{MockExecutorProxy, SynchronizerEnvHelper},
@@ -71,7 +71,7 @@ pub fn test_state_sync_msg_fuzzer_impl(msg: StateSyncMessage) {
     let network_senders = vec![(node_network_id.clone(), network_sender)]
         .into_iter()
         .collect::<HashMap<_, _>>();
-    let mut coordinator = SyncCoordinator::new(
+    let mut coordinator = StateSyncCoordinator::new(
         coordinator_receiver,
         mempool_sender,
         network_senders,

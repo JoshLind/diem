@@ -1,7 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use crate::{
-    coordinator::{CoordinatorMessage, SyncCoordinator, SyncRequest},
+    coordinator::{CoordinatorMessage, StateSyncCoordinator, SyncRequest},
     counters,
     executor_proxy::{ExecutorProxy, ExecutorProxyTrait},
     network::{StateSyncEvents, StateSyncSender},
@@ -157,7 +157,7 @@ impl StateSync {
             .map(|(network_id, sender, _events)| (network_id.clone(), sender.clone()))
             .collect();
 
-        let coordinator = SyncCoordinator::new(
+        let coordinator = StateSyncCoordinator::new(
             coordinator_receiver,
             state_sync_to_mempool_sender,
             network_senders,
