@@ -263,7 +263,7 @@ dependencies = [
  "libra-canonical-serialization",
  "num_cpus",
  "once_cell",
- "pin-project 1.0.2",
+ "pin-project 1.0.4",
  "proptest",
  "rand 0.7.3",
  "regex",
@@ -2959,7 +2959,7 @@ dependencies = [
  "futures-sink",
  "futures-task",
  "memchr",
- "pin-project 1.0.2",
+ "pin-project 1.0.4",
  "pin-utils",
  "proc-macro-hack",
  "proc-macro-nested",
@@ -3361,7 +3361,7 @@ dependencies = [
  "httparse",
  "httpdate",
  "itoa",
- "pin-project 1.0.2",
+ "pin-project 1.0.4",
  "socket2",
  "tokio",
  "tower-service",
@@ -4320,7 +4320,7 @@ dependencies = [
  "diem-workspace-hack",
  "futures 0.3.8",
  "memsocket",
- "pin-project 1.0.2",
+ "pin-project 1.0.4",
  "serde",
  "tokio",
  "url",
@@ -4354,7 +4354,7 @@ dependencies = [
  "network-builder",
  "num-variants",
  "once_cell",
- "pin-project 1.0.2",
+ "pin-project 1.0.4",
  "proptest",
  "proptest-derive",
  "rand 0.7.3",
@@ -4819,11 +4819,11 @@ dependencies = [
 
 [[package]]
 name = "pin-project"
-version = "1.0.2"
+version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ccc2237c2c489783abd8c4c80e5450fc0e98644555b1364da68cc29aa151ca7"
+checksum = "95b70b68509f17aa2857863b6fa00bf21fc93674c7a8893de2f469f6aa7ca2f2"
 dependencies = [
- "pin-project-internal 1.0.2",
+ "pin-project-internal 1.0.4",
 ]
 
 [[package]]
@@ -4839,9 +4839,9 @@ dependencies = [
 
 [[package]]
 name = "pin-project-internal"
-version = "1.0.2"
+version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8e8d2bf0b23038a4424865103a4df472855692821aab4e4f5c3312d461d9e5f"
+checksum = "caa25a6393f22ce819b0f50e0be89287292fda8d425be38ee0ca14c4931d9e71"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.7",
