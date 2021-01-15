@@ -18,7 +18,7 @@ use diem_mempool::ConsensusRequest;
 use diem_types::on_chain_config::OnChainConfigPayload;
 use execution_correctness::ExecutionCorrectnessManager;
 use futures::channel::mpsc;
-use state_synchronizer::StateSynchronizerClient;
+use state_synchronizer::state_synchronizer::StateSynchronizerClient;
 use std::sync::Arc;
 use storage_interface::DbReader;
 use tokio::runtime::{self, Runtime};

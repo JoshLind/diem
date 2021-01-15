@@ -270,7 +270,7 @@ impl StateSynchronizerClient {
 
     /// Returns information about StateSynchronizer internal state. This should only
     /// be used by tests.
-    #[cfg(test)]
+    // TODO(joshlind): remove this once unit tests are added!
     pub fn get_state(&self) -> impl Future<Output = Result<SynchronizationState>> {
         let mut sender = self.coordinator_sender.clone();
         let (cb_sender, cb_receiver) = oneshot::channel();
