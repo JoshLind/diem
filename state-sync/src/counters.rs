@@ -49,6 +49,9 @@ pub fn set_version(version_type: VersionType, version: u64) {
         .set(version as i64)
 }
 
+// Highest is currently unused. This will be fixed shortly when we change the handling
+// of the highest ledger info queue!
+#[allow(dead_code)]
 pub enum VersionType {
     /// Version of latest ledger info committed.
     Committed,
