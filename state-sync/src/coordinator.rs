@@ -41,6 +41,7 @@ use std::{
 };
 use tokio::time::{interval, timeout};
 use tokio_stream::wrappers::IntervalStream;
+use network::peer::Peer;
 
 const MEMPOOL_COMMIT_ACK_TIMEOUT_SECS: u64 = 5;
 
@@ -878,40 +879,6 @@ impl<T: ExecutorProxyTrait> StateSyncCoordinator<T> {
             ))
         });
 
-        // Check response comes from upstream peer
-        if !self.request_manager.is_known_upstream_peer(peer) {
-            counters::RESPONSE_FROM_DOWNSTREAM_COUNT
-                .with_label_values(&[
-                    &peer.raw_network_id().to_string(),
-                    &peer.peer_id().to_string(),
-                ])
-                .inc();
-            return Err(Error::ReceivedChunkFromDownstream(peer.to_string()));
-        }
-
-        // Check chunk is not empty
-        let txn_list_with_proof = response.txn_list_with_proof.clone();
-        let chunk_start_version =
-            txn_list_with_proof
-                .first_transaction_version
-                .ok_or_else(|| {
-                    self.request_manager.process_empty_chunk(&peer);
-                    Error::ReceivedEmptyChunk(peer.to_string())
-                })?;
-
-        // Check chunk starts at the correct version
-        let known_version = self.local_state.synced_version();
-        let expected_version = known_version
-            .checked_add(1)
-            .ok_or_else(|| Error::IntegerOverflow("Expected version has overflown!".into()))?;
-        if chunk_start_version != expected_version {
-            self.request_manager.process_chunk_version_mismatch(
-                peer,
-                chunk_start_version,
-                known_version,
-            )?;
-        }
-
         // Process the chunk based on the response type
         match response.response_li {
             ResponseLedgerInfo::VerifiableLedgerInfo(li) => {
@@ -1006,6 +973,9 @@ impl<T: ExecutorProxyTrait> StateSyncCoordinator<T> {
             return Err(error);
         }
 
+        // Verify the chunk response is well formed before trying to process it.
+        self.verify_chunk_response_is_valid(&peer, &response)?;
+
         // Validate the response and store the chunk if possible.
         // Any errors thrown here should be for detecting bad chunks.
         match self.apply_chunk(peer, response.clone()) {
@@ -1052,6 +1022,45 @@ impl<T: ExecutorProxyTrait> StateSyncCoordinator<T> {
             );
             error
         })
+    }
+
+    fn verify_chunk_response_is_valid(&mut self, peer: &Peer, response: &GetChunkResponse) -> Result<(), Error> {
+        // Check response comes from upstream peer
+        if !self.request_manager.is_known_upstream_peer(peer) {
+            counters::RESPONSE_FROM_DOWNSTREAM_COUNT
+                .with_label_values(&[
+                    &peer.raw_network_id().to_string(),
+                    &peer.peer_id().to_string(),
+                ])
+                .inc();
+            // TODO(joshlind): penalize peer.
+            return Err(Error::ReceivedChunkFromDownstream(peer.to_string()));
+        }
+
+        // Verify the chunk is not empty
+        let txn_list_with_proof = response.txn_list_with_proof.clone();
+        let chunk_start_version =
+            txn_list_with_proof
+                .first_transaction_version
+                .ok_or_else(|| {
+                    self.request_manager.process_empty_chunk(&peer);
+                    Error::ReceivedEmptyChunk(peer.to_string())
+                })?;
+
+        // Check chunk starts at the correct version
+        let known_version = self.local_state.synced_version();
+        let expected_version = known_version
+            .checked_add(1)
+            .ok_or_else(|| Error::IntegerOverflow("Expected version has overflown!".into()))?;
+        if chunk_start_version != expected_version {
+            self.request_manager.process_chunk_version_mismatch(
+                peer,
+                chunk_start_version,
+                known_version,
+            )?;
+        }
+
+        Ok(())
     }
 
     /// Calculates the next version and epoch to request (assuming the given transaction list
